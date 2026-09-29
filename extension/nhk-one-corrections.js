@@ -12,7 +12,19 @@ void (async () => {
   }
 
   const SVC = { g1: '総合', e1: 'Eテレ' };
-  const AREA = { '130': '東京' };
+  // 地域の番号と名前（NHK ONE の日付ページの見出し「NHK総合・○○」から。さいたま・千葉・横浜は東京と同じ番組表）
+  const AREA = {
+    '010': '札幌', '011': '函館', '012': '旭川', '013': '帯広', '014': '釧路', '015': '北見', '016': '室蘭',
+    '020': '青森', '030': '盛岡', '040': '仙台', '050': '秋田', '060': '山形', '070': '福島',
+    '080': '水戸', '090': '宇都宮', '100': '前橋', '110': '東京', '120': '東京', '130': '東京', '140': '東京',
+    '150': '新潟', '160': '富山', '170': '金沢', '180': '福井', '190': '甲府', '200': '長野', '210': '岐阜',
+    '220': '静岡', '230': '名古屋', '240': '津', '250': '大津', '260': '京都', '270': '大阪', '280': '神戸',
+    '290': '奈良', '300': '和歌山', '310': '鳥取', '320': '松江', '330': '岡山', '340': '広島', '350': '山口',
+    '360': '徳島', '370': '高松', '380': '松山', '390': '高知', '400': '福岡', '401': '北九州', '410': '佐賀',
+    '420': '長崎', '430': '熊本', '440': '大分', '450': '宮崎', '460': '鹿児島', '470': '沖縄',
+  };
+  // ご利用確認で選んだ地域（Cookie の area_permanent）。わからなければ東京
+  const myArea = ((document.cookie.match(/(?:^|;\s*)area_permanent=(\d{3})/) || [])[1]) || '130';
   const WD = '日月火水木金土';
 
   // "00065200" → 412 秒。先頭6桁が時・分・秒（末尾2桁は使わない）
@@ -106,6 +118,8 @@ void (async () => {
        border:1px solid #34404e;border-radius:6px;padding:3px 10px;cursor:pointer}
     button:hover{background:#2e3c4f}
     button[aria-pressed="true"]{background:#eef2f6;color:#12181f}
+    select{font:inherit;font-size:12.5px;font-weight:700;color:#eef2f6;background:#243040;border:1px solid #34404e;
+       border-radius:6px;padding:3px 6px;cursor:pointer}
     .prog{border-top:1px solid #26303b;margin-top:12px;padding-top:10px}
     .pn{font-weight:700;overflow-wrap:anywhere}
     .pn a{color:#9cc6f5;text-decoration:none}
@@ -197,10 +211,22 @@ void (async () => {
     let videos;
     try { videos = await pageVideos(`/tv/pl/schedule-tep-${svc}-${area}-${day}/list`); }
     catch (e) { videos = []; }
+    const pick = el('select');
+    pick.setAttribute('aria-label', '地域');
+    // 番号の順に並べる（'130' のような数字だけのキーは Object.entries で先に来てしまうため）
+    for (const [code, name] of Object.keys(AREA).sort().map(c => [c, AREA[c]])) {
+      if (['110', '120', '140'].includes(code)) continue;
+      const o = el('option', '', name);
+      o.value = code;
+      o.selected = code === area || (AREA[area] === name && ['110', '120', '140'].includes(area));
+      pick.append(o);
+    }
+    pick.onchange = () => showDay(svc, pick.value, day);
     const nav = [
       button('前の日', () => showDay(svc, area, shiftDay(day, -1))),
       button('次の日', () => showDay(svc, area, shiftDay(day, 1))),
       ...Object.keys(SVC).map(s => button(SVC[s], () => showDay(s, area, day), s === svc)),
+      pick,
     ];
     if (!videos.length) {
       render({ title, sub: '見逃し配信の番組が見つかりませんでした', programs: [], footer: nav, textHead: [title],
@@ -239,7 +265,8 @@ void (async () => {
     const { list } = await withItems(videos);
     const n = list.reduce((s, v) => s + v.items.length, 0);
     const m = /hskOriginal-([a-z0-9]+)-(\d+)-(\d{8})/.exec(list[0].id || '');
-    const footer = m ? [button(`この日の${SVC[m[1]] || m[1]}の全番組`, () => showDay(m[1], m[2], m[3]))] : [];
+    // 全国放送の回の ID は東京（130）になっているので、一覧は自分の地域で出す
+    const footer = m ? [button(`この日の${SVC[m[1]] || m[1]}の全番組`, () => showDay(m[1], myArea, m[3]))] : [];
     render({ title: `${title}（${n}件）`, sub: n ? '▶ は配信動画の頭からの時間' : list[0].name, programs: list.filter(v => v.items.length), footer,
       textHead: [], empty: 'この回の動画情報には、訂正・お断りの文言はありませんでした。' });
   };
@@ -250,6 +277,6 @@ void (async () => {
   else if (day) await showDay(day[1], day[2], day[3]);
   else {
     const t = new Date(Date.now() + 9 * 3600 * 1000);
-    await showDay('g1', '130', `${t.getUTCFullYear()}${p2(t.getUTCMonth() + 1)}${p2(t.getUTCDate())}`);
+    await showDay('g1', myArea, `${t.getUTCFullYear()}${p2(t.getUTCMonth() + 1)}${p2(t.getUTCDate())}`);
   }
 })();

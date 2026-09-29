@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "NHK ONE 訂正一覧",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "NHK ONE の見逃し配信で映像に重ねて出る「訂正・お断り」を、その回やその日の全番組について一覧にします（非公式）。",
   "homepage_url": "https://github.com/DarksideofNHK/nhk-one-corrections",
   "permissions": ["activeTab", "scripting"],
