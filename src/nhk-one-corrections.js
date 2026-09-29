@@ -1,10 +1,17 @@
 // NHK ONE 訂正一覧（ブックマークレット）
 // 見逃し配信のページで押すと、この回の映像に重ねて出る「訂正・お断り」を一覧にする。
 // ページがすでに読み込んだ動画情報（videoinfo-*.json）を読み直すだけで、ほかの場所にはアクセスしない。
-(async () => {
+void (async () => {
   const PANEL_ID = 'nhk-one-corrections-panel';
   const old = document.getElementById(PANEL_ID);
   if (old) { old.remove(); return; }
+
+  // ページの中で別の回に移ったあとは、どの回の動画情報か確かめられないので読み込み直してもらう
+  const nav = performance.getEntriesByType('navigation')[0];
+  if (nav && new URL(nav.name).pathname !== location.pathname) {
+    if (confirm('ページの中で別の回に移ったあとは、どの回の情報か確かめられません。\nページを読み込み直しますか？（読み込んだあと、もう一度押してください）')) location.reload();
+    return;
+  }
 
   // ページが読み込んだ動画情報を探す（プレーヤーが表示されたあとに読み込まれる）
   const url = performance.getEntriesByType('resource')
@@ -12,7 +19,7 @@
     .reverse()
     .find(n => /\/videoinfo-[^/?]+\.json(\?|$)/.test(n));
   if (!url) {
-    alert('この回の動画情報がまだ読み込まれていません。\nNHK ONE の見逃し配信のページで、プレーヤーが表示されてからもう一度押してください。');
+    alert('この回の動画情報がまだ読み込まれていません。\nNHK ONE の見逃し配信のページで、プレーヤーが表示されてからもう一度押してください。\n（番組を見るのにご利用確認が求められたときは、先に済ませてください）');
     return;
   }
   let info;
