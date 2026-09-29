@@ -1,44 +1,41 @@
 // NHK ONE 訂正一覧（ブックマークレット）
-// 見逃し配信のページで押すと、この回の映像に重ねて出る「訂正・お断り」を一覧にする。
-// ページがすでに読み込んだ動画情報（videoinfo-*.json）を読み直すだけで、ほかの場所にはアクセスしない。
+// 見逃し配信の番組ページで押すと、その回の映像に重ねて出る「訂正・お断り」を一覧にする。
+// パネルのボタンで、その日の総合・Eテレの全番組の訂正も一覧にできる。
+// 読むのは NHK ONE のページ（ブラウザで開くのと同じもの）と、各回の動画情報（videoinfo-*.json）だけ。
 void (async () => {
   const PANEL_ID = 'nhk-one-corrections-panel';
   const old = document.getElementById(PANEL_ID);
   if (old) { old.remove(); return; }
-
-  // ページの中で別の回に移ったあとは、どの回の動画情報か確かめられないので読み込み直してもらう
-  const nav = performance.getEntriesByType('navigation')[0];
-  if (nav && new URL(nav.name).pathname !== location.pathname) {
-    if (confirm('ページの中で別の回に移ったあとは、どの回の情報か確かめられません。\nページを読み込み直しますか？（読み込んだあと、もう一度押してください）')) location.reload();
+  if (location.hostname !== 'www.web.nhk') {
+    alert('NHK ONE（www.web.nhk）のページで押してください。');
     return;
   }
 
-  // ページが読み込んだ動画情報を探す（プレーヤーが表示されたあとに読み込まれる）
-  const url = performance.getEntriesByType('resource')
-    .map(e => e.name)
-    .reverse()
-    .find(n => /\/videoinfo-[^/?]+\.json(\?|$)/.test(n));
-  if (!url) {
-    alert('この回の動画情報がまだ読み込まれていません。\nNHK ONE の見逃し配信のページで、プレーヤーが表示されてからもう一度押してください。\n（番組を見るのにご利用確認が求められたときは、先に済ませてください）');
-    return;
-  }
-  let info;
-  try {
-    info = await (await fetch(url)).json();
-  } catch (e) {
-    alert('動画情報を読めませんでした: ' + e);
-    return;
-  }
+  const SVC = { g1: '総合', e1: 'Eテレ' };
+  const AREA = { '130': '東京' };
+  const WD = '日月火水木金土';
 
   // "00065200" → 412 秒。先頭6桁が時・分・秒（末尾2桁は使わない）
   const toSec = s => {
     const m = /^(\d\d)(\d\d)(\d\d)/.exec(s || '');
     return m ? (+m[1] * 60 + +m[2]) * 60 + +m[3] : null;
   };
+  const p2 = n => String(n).padStart(2, '0');
   const hms = sec => {
     const h = Math.floor(sec / 3600), m = Math.floor(sec / 60) % 60, s = sec % 60;
-    const p = n => String(n).padStart(2, '0');
-    return h ? `${h}:${p(m)}:${p(s)}` : `${p(m)}:${p(s)}`;
+    return h ? `${h}:${p2(m)}:${p2(s)}` : `${p2(m)}:${p2(s)}`;
+  };
+  const clock = (iso, plusSec) => {
+    const t = new Date(new Date(iso).getTime() + (plusSec || 0) * 1000 + 9 * 3600 * 1000);
+    return `${p2(t.getUTCHours())}:${p2(t.getUTCMinutes())}` + (plusSec !== undefined ? `:${p2(t.getUTCSeconds())}` : '');
+  };
+  const dayLabel = d => {
+    const t = new Date(Date.UTC(+d.slice(0, 4), +d.slice(4, 6) - 1, +d.slice(6, 8)));
+    return `${+d.slice(4, 6)}月${+d.slice(6, 8)}日（${WD[t.getUTCDay()]}）`;
+  };
+  const shiftDay = (d, n) => {
+    const t = new Date(Date.UTC(+d.slice(0, 4), +d.slice(4, 6) - 1, +d.slice(6, 8) + n));
+    return `${t.getUTCFullYear()}${p2(t.getUTCMonth() + 1)}${p2(t.getUTCDate())}`;
   };
   // 文言からのおおまかな分類（キーワードによる推定）
   const kindOf = msg => {
@@ -47,86 +44,212 @@ void (async () => {
     if (/ニュースが入|中断|休止|差し替え|お断り|お知らせ|放送はありません/.test(msg)) return 'お知らせ';
     return '補足';
   };
-
-  const items = (info.disclaimer || [])
+  const itemsOf = info => (info.disclaimer || [])
     .filter(d => d && d.message)
     .map(d => ({ sec: toSec(d.start), dur: toSec(d.duration), message: d.message.trim(), kind: kindOf(d.message) }))
     .filter(d => d.sec !== null)
     .sort((a, b) => a.sec - b.sec);
 
-  const title = document.title.replace(/\s*[|｜]\s*NHK(\s*ONE)?\s*$/, '');
-  const lines = items.map(d => `[${hms(d.sec)}〜 ${d.dur}秒]〔${d.kind}〕${d.message}`);
-  const plain = [title, location.href, ...(lines.length ? lines : ['（訂正・お断りはありません）']),
-    '出典: NHK ONE 見逃し配信（映像に重ねて表示される文言）'].join('\n');
+  // NHK ONE のページに埋め込まれた番組データから、見逃し配信の動画を取り出す
+  const pageVideos = async path => {
+    const html = await (await fetch(path, { credentials: 'include' })).text();
+    const text = [...html.matchAll(/self\.__next_f\.push\(\[1,("(?:[^"\\]|\\.)*")\]\)/g)]
+      .map(m => { try { return JSON.parse(m[1]); } catch (e) { return ''; } })
+      .join('');
+    const starts = [...text.matchAll(/\{"id":"hskOriginal-/g)].map(m => m.index);
+    const videos = new Map();
+    starts.forEach((s, i) => {
+      const chunk = text.slice(s, Math.min(starts[i + 1] || Infinity, s + 4000));
+      const get = k => {
+        const m = chunk.match(new RegExp('"' + k + '":"((?:[^"\\\\]|\\\\.)*)"'));
+        try { return m ? JSON.parse('"' + m[1] + '"') : ''; } catch (e) { return ''; }
+      };
+      const desc = get('detailedVideoDescriptor');
+      if (!/\/videoinfo-[^/]+\.json$/.test(desc) || get('streamType') !== 'vod' || get('contentStatus') !== 'ready') return;
+      if (!videos.has(desc)) {
+        videos.set(desc, { id: get('id'), name: get('name').normalize('NFKC'), url: get('url'), start: get('startDate'), desc });
+      }
+    });
+    return [...videos.values()].sort((a, b) => a.start.localeCompare(b.start));
+  };
+  const withItems = async (videos, onProgress) => {
+    let done = 0, errors = 0;
+    const out = new Array(videos.length);
+    const queue = videos.map((v, i) => [v, i]);
+    const worker = async () => {
+      for (let job = queue.shift(); job; job = queue.shift()) {
+        const [v, i] = job;
+        try { out[i] = { ...v, items: itemsOf(await (await fetch(v.desc)).json()) }; }
+        catch (e) { out[i] = { ...v, items: [], error: true }; errors++; }
+        if (onProgress) onProgress(++done, videos.length);
+      }
+    };
+    await Promise.all([worker(), worker(), worker(), worker()]);
+    return { list: out, errors };
+  };
 
-  // 表示（ページの CSS の影響を受けないよう Shadow DOM の中に作る）
+  // ---- 表示（ページの CSS の影響を受けないよう Shadow DOM の中に作る）
   const host = document.createElement('div');
   host.id = PANEL_ID;
   host.style.cssText = 'position:fixed;inset:16px 16px auto auto;margin:0;padding:0;border:0;background:none;overflow:visible;z-index:2147483647';
   const root = host.attachShadow({ mode: 'open' });
   const style = document.createElement('style');
   style.textContent = `
-    .p{width:min(440px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;box-sizing:border-box;
+    .p{width:min(460px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;box-sizing:border-box;
        background:#12181f;color:#eef2f6;border:1px solid #2c3642;border-radius:10px;padding:14px 16px;
        font:14px/1.6 "Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
        box-shadow:0 8px 28px rgba(0,0,0,.45)}
     .h{display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
     .t{font-weight:700;font-size:15px}
     .s{color:#9aa6b3;font-size:12.5px;margin-top:2px;overflow-wrap:anywhere}
-    button{flex-shrink:0;white-space:nowrap;font:inherit;font-size:12.5px;font-weight:700;color:#eef2f6;background:#243040;border:1px solid #34404e;
-       border-radius:6px;padding:3px 10px;cursor:pointer}
+    button{flex-shrink:0;white-space:nowrap;font:inherit;font-size:12.5px;font-weight:700;color:#eef2f6;background:#243040;
+       border:1px solid #34404e;border-radius:6px;padding:3px 10px;cursor:pointer}
     button:hover{background:#2e3c4f}
-    ol{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
-    li{border-top:1px solid #26303b;padding-top:10px}
-    .m{display:flex;gap:8px;align-items:center;font-size:12.5px;color:#9aa6b3}
+    button[aria-pressed="true"]{background:#eef2f6;color:#12181f}
+    .prog{border-top:1px solid #26303b;margin-top:12px;padding-top:10px}
+    .pn{font-weight:700;overflow-wrap:anywhere}
+    .pn a{color:#9cc6f5;text-decoration:none}
+    .pn a:hover{text-decoration:underline}
+    .pt{color:#9aa6b3;font-size:12.5px}
+    ol{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+    .m{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;font-size:12.5px;color:#9aa6b3}
     .tc{font-family:ui-monospace,Menlo,monospace;color:#eef2f6}
     .k{font-weight:700;border-radius:4px;padding:0 7px;font-size:12px}
     .k[data-k="訂正"]{background:#4a1f1d;color:#ffb1aa}
     .k[data-k="補足"]{background:#43330f;color:#f3cd7d}
     .k[data-k="修正済み"]{background:#15372f;color:#8fdcc6}
     .k[data-k="お知らせ"]{background:#2a323d;color:#c3ccd6}
-    .msg{margin-top:4px;overflow-wrap:anywhere}
+    .msg{margin-top:2px;overflow-wrap:anywhere}
     .e{margin-top:12px;color:#9aa6b3}
-    .f{display:flex;gap:8px;margin-top:14px;align-items:center;font-size:12px;color:#7d8996}`;
+    .f{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;align-items:center;font-size:12px;color:#7d8996}`;
   const el = (tag, cls, text) => {
     const x = document.createElement(tag);
     if (cls) x.className = cls;
     if (text !== undefined) x.textContent = text;
     return x;
   };
-  const panel = el('div', 'p');
-  const head = el('div', 'h');
-  const hl = el('div');
-  hl.append(el('div', 't', `この回の訂正・お断り（${items.length}件）`), el('div', 's', title));
-  const close = el('button', '', '閉じる');
-  close.onclick = () => host.remove();
-  head.append(hl, close);
-  panel.append(head);
-  if (items.length) {
-    const ol = el('ol');
-    for (const d of items) {
-      const li = el('li');
-      const meta = el('div', 'm');
-      const k = el('span', 'k', d.kind);
-      k.dataset.k = d.kind;
-      meta.append(k, el('span', 'tc', `${hms(d.sec)}〜`), el('span', '', `${d.dur}秒`));
-      li.append(meta, el('div', 'msg', d.message));
-      ol.append(li);
-    }
-    panel.append(ol);
-  } else {
-    panel.append(el('div', 'e', 'この回の動画情報には、訂正・お断りの文言はありませんでした。'));
-  }
-  const foot = el('div', 'f');
-  const copy = el('button', '', 'テキストでコピー');
-  copy.onclick = async () => {
-    try { await navigator.clipboard.writeText(plain); copy.textContent = 'コピーしました'; }
-    catch (e) { prompt('コピーしてください', plain); }
+  const button = (label, onclick, pressed) => {
+    const b = el('button', '', label);
+    b.type = 'button';
+    b.onclick = onclick;
+    if (pressed !== undefined) b.setAttribute('aria-pressed', String(pressed));
+    return b;
   };
-  foot.append(copy, el('span', '', '時刻は配信動画の頭からの時間'));
-  panel.append(foot);
+  const panel = el('div', 'p');
   root.append(style, panel);
   document.body.append(host);
   // ページのお知らせ窓（最前面のダイアログ）より上に出す
   if (host.showPopover) { host.popover = 'manual'; host.showPopover(); }
+
+  const copyButton = text => {
+    const b = button('テキストでコピー', async () => {
+      try { await navigator.clipboard.writeText(text); b.textContent = 'コピーしました'; }
+      catch (e) { prompt('コピーしてください', text); }
+    });
+    return b;
+  };
+  // programs: [{name, url, start, items}]。showTime: 番組名の前に放送開始時刻を出す
+  const render = ({ title, sub, programs, empty, showTime, footer, textHead }) => {
+    panel.replaceChildren();
+    const head = el('div', 'h');
+    const hl = el('div');
+    hl.append(el('div', 't', title), el('div', 's', sub));
+    head.append(hl, button('閉じる', () => host.remove()));
+    panel.append(head);
+    const lines = [...textHead];
+    for (const g of programs || []) {
+      const box = el('div', 'prog');
+      const pn = el('div', 'pn');
+      if (showTime && g.start) pn.append(el('span', 'pt', clock(g.start) + ' '));
+      const a = el('a', '', g.name);
+      a.href = g.url;
+      pn.append(a);
+      box.append(pn);
+      const ol = el('ol');
+      for (const d of g.items) {
+        const li = el('li');
+        const meta = el('div', 'm');
+        const k = el('span', 'k', d.kind);
+        k.dataset.k = d.kind;
+        meta.append(k, el('span', 'tc', `▶ ${hms(d.sec)}〜`), el('span', '', `${d.dur}秒`));
+        if (g.start) meta.append(el('span', '', `放送 ${clock(g.start, d.sec)}`));
+        li.append(meta, el('div', 'msg', d.message));
+        ol.append(li);
+      }
+      box.append(ol);
+      panel.append(box);
+      lines.push('', `${showTime && g.start ? clock(g.start) + ' ' : ''}${g.name}`, g.url,
+        ...g.items.map(d => `[▶${hms(d.sec)}〜 ${d.dur}秒${g.start ? '・放送 ' + clock(g.start, d.sec) : ''}]〔${d.kind}〕${d.message}`));
+    }
+    if (!programs || !programs.length) panel.append(el('div', 'e', empty));
+    lines.push('', '出典: NHK ONE 見逃し配信（映像に重ねて表示される文言）');
+    const foot = el('div', 'f');
+    foot.append(copyButton(lines.join('\n')), ...(footer || []));
+    panel.append(foot);
+  };
+  const status = (title, sub) => render({ title, sub, programs: [], empty: '', textHead: [] });
+
+  // ---- その日の全番組
+  const showDay = async (svc, area, day) => {
+    const label = `${dayLabel(day)} ${SVC[svc] || svc}（${AREA[area] || area}）`;
+    const title = `${label}の訂正・お断り`;
+    status(title, '番組の一覧を読んでいます…');
+    let videos;
+    try { videos = await pageVideos(`/tv/pl/schedule-tep-${svc}-${area}-${day}/list`); }
+    catch (e) { videos = []; }
+    const nav = [
+      button('前の日', () => showDay(svc, area, shiftDay(day, -1))),
+      button('次の日', () => showDay(svc, area, shiftDay(day, 1))),
+      ...Object.keys(SVC).map(s => button(SVC[s], () => showDay(s, area, day), s === svc)),
+    ];
+    if (!videos.length) {
+      render({ title, sub: '見逃し配信の番組が見つかりませんでした', programs: [], footer: nav, textHead: [title],
+        empty: '配信期間（おおむね1週間）を過ぎた日か、ご利用確認がまだかもしれません。' });
+      return;
+    }
+    const { list, errors } = await withItems(videos, (n, all) => status(title, `見逃し配信 ${all}本の動画情報を確認しています…（${n}/${all}）`));
+    const hits = list.filter(v => v.items.length);
+    const count = hits.reduce((s, v) => s + v.items.length, 0);
+    const sub = `見逃し配信 ${videos.length}本を確認。${hits.length}番組に${count}件` + (errors ? `（読めなかった動画情報 ${errors}件）` : '');
+    render({ title, sub, programs: hits, showTime: true, footer: nav, textHead: [title, sub],
+      empty: 'この日の番組には、訂正・お断りの文言はありませんでした。' });
+  };
+
+  // ---- いま開いている回
+  const showEpisode = async epId => {
+    const title = 'この回の訂正・お断り';
+    status(title, '読んでいます…');
+    let videos = [];
+    try { videos = (await pageVideos(location.pathname)).filter(v => v.url.includes('/ep/' + epId)); }
+    catch (e) { videos = []; }
+    if (!videos.length) {
+      // ページのデータから見つからないときは、ページがすでに読み込んだ動画情報を使う（ページを開き直した直後だけ）
+      const nav = performance.getEntriesByType('navigation')[0];
+      const moved = nav && new URL(nav.name).pathname !== location.pathname;
+      const vi = performance.getEntriesByType('resource').map(e => e.name).filter(n => /\/videoinfo-[^/?]+\.json(\?|$)/.test(n));
+      if (!moved && vi.length) {
+        videos = [{ name: document.title.replace(/\s*[|｜]\s*NHK(\s*ONE)?\s*$/, ''), url: location.href, start: '', desc: vi[vi.length - 1] }];
+      }
+    }
+    if (!videos.length) {
+      render({ title, sub: document.title, programs: [], textHead: [],
+        empty: 'この回の動画情報が見つかりませんでした。見逃し配信が終わった回か、ご利用確認がまだかもしれません（番組を見るのにご利用確認が求められたときは、先に済ませてください）。' });
+      return;
+    }
+    const { list } = await withItems(videos);
+    const n = list.reduce((s, v) => s + v.items.length, 0);
+    const m = /hskOriginal-([a-z0-9]+)-(\d+)-(\d{8})/.exec(list[0].id || '');
+    const footer = m ? [button(`この日の${SVC[m[1]] || m[1]}の全番組`, () => showDay(m[1], m[2], m[3]))] : [];
+    render({ title: `${title}（${n}件）`, sub: n ? '▶ は配信動画の頭からの時間' : list[0].name, programs: list.filter(v => v.items.length), footer,
+      textHead: [], empty: 'この回の動画情報には、訂正・お断りの文言はありませんでした。' });
+  };
+
+  const day = location.pathname.match(/^\/tv\/pl\/schedule-tep-([a-z0-9]+)-(\d+)-(\d{8})/);
+  const ep = location.pathname.match(/\/ep\/([A-Z0-9]{10})/);
+  if (ep) await showEpisode(ep[1]);
+  else if (day) await showDay(day[1], day[2], day[3]);
+  else {
+    const t = new Date(Date.now() + 9 * 3600 * 1000);
+    await showDay('g1', '130', `${t.getUTCFullYear()}${p2(t.getUTCMonth() + 1)}${p2(t.getUTCDate())}`);
+  }
 })();

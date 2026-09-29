@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NHK ONE 訂正一覧</title>
-<meta name="description" content="NHK ONE の見逃し配信で、映像に重ねて出る「訂正・お断り」をその回の一覧にするブックマークレット（非公式）">
+<meta name="description" content="NHK ONE の見逃し配信で、映像に重ねて出る「訂正・お断り」を、その回やその日の全番組について一覧にするブックマークレット（非公式）">
 <style>
 :root{
   --bg:#f5f7f9; --surface:#ffffff; --ink:#17212b; --muted:#5b6674; --rule:#dde2e8;
@@ -52,7 +52,7 @@ button{font:inherit;font-size:14px;font-weight:700;color:var(--ink);background:v
   <header>
     <h1>NHK ONE 訂正一覧</h1>
     <p class="lead">NHK ONE の見逃し配信では、放送で誤りがあった場面に「右下の会社名に誤り　正しくは〜」のような文言が映像に重ねて表示されます。
-      このブックマークレットは、いま開いている回に入っている<strong>訂正・お断りの文言を時刻つきで一覧</strong>にします。非公式のツールです。</p>
+      このブックマークレットは、その回や、その日の全番組の<strong>訂正・お断りの文言を時刻つきで一覧</strong>にします。非公式のツールです。</p>
   </header>
 
   <section>
@@ -66,19 +66,19 @@ button{font:inherit;font-size:14px;font-weight:700;color:var(--ink);background:v
   <section>
     <h2>使い方</h2>
     <ol>
-      <li>NHK ONE で見逃し配信の番組ページを開く（ふだんどおり、ご利用確認を済ませた状態で）</li>
-      <li>プレーヤーが表示されたら、ブックマークの「NHK ONE 訂正一覧」を押す</li>
-      <li>右上に、この回の訂正・お断りが時刻つきで出ます。もう一度押すと閉じます</li>
+      <li>NHK ONE で見逃し配信を見られる状態にする（ふだんどおり、ご利用確認を済ませた状態）</li>
+      <li>番組ページでブックマークの「NHK ONE 訂正一覧」を押すと、右上に<strong>その回</strong>の訂正・お断りが時刻つきで出ます</li>
+      <li>パネルの「この日の総合の全番組」を押すと、<strong>その日の全番組</strong>の訂正・お断りの一覧になります。「前の日」「次の日」「総合」「Eテレ」で切り替えられます</li>
     </ol>
-    <p class="small">時刻は配信動画の頭からの時間です。ページの中で別の回に移ったあとは、読み込み直してから押してください。「テキストでコピー」で、番組名・ページの URL・出典つきの文字にできます。</p>
+    <p class="small">番組ページ以外の NHK ONE のページで押すと、今日の総合（東京）の一覧が出ます。もう一度押すと閉じます。▶ は配信動画の頭からの時間、「放送」は放送された時刻です。「テキストでコピー」で、番組名・ページの URL・出典つきの文字にできます。</p>
   </section>
 
   <section>
     <h2>何をしているか</h2>
     <ul>
-      <li>番組ページのプレーヤーは、動画に付いている情報（JSON）の中の文言を、指定の時刻から指定の秒数だけ映像に重ねています</li>
-      <li>このブックマークレットは、<strong>ページがすでに読み込んだその情報を読み直して</strong>一覧にするだけです。番組表の巡回や、ほかのページへのアクセスはしません</li>
-      <li>映像・音声・字幕には触れません。情報はどこにも送りません</li>
+      <li>番組ページのプレーヤーは、動画に付いている情報（JSON）の中の文言を、指定の時刻から指定の秒数だけ映像に重ねています。訂正は映像ではなく文字のデータです</li>
+      <li>ボタンを押したときに、NHK ONE のページ（ブラウザで開くのと同じもの）を1回と、各回の動画情報を読みます。その回だけなら1件、その日の全番組なら1チャンネルで約60件です</li>
+      <li>定期的な巡回はしません。映像・音声・字幕には触れません。読んだ情報はどこにも送りません</li>
       <li>「訂正」「補足」「修正済み」「お知らせ」の分類は、文言のキーワードからのおおまかな推定です</li>
     </ul>
   </section>
@@ -87,7 +87,7 @@ button{font:inherit;font-size:14px;font-weight:700;color:var(--ink);background:v
     <h2>注意</h2>
     <ul>
       <li>NHK とは関係のない非公式のツールです。NHK ONE の仕様が変わると動かなくなることがあります</li>
-      <li>NHK ONE の利用には <a href="https://www.nhk.or.jp/rules/">NHKインターネットサービス利用規約</a> が適用されます。自動で大量に取得するような使い方はしないでください</li>
+      <li>NHK ONE の利用には <a href="https://www.nhk.or.jp/rules/">NHKインターネットサービス利用規約</a> が適用されます。短い間に何度も押すような使い方はしないでください</li>
       <li>訂正の文言を紹介するときは、番組名と出典（NHK ONE）を添えてください</li>
     </ul>
     <p class="small">ソースコード: <a href="https://github.com/DarksideofNHK/nhk-one-corrections">github.com/DarksideofNHK/nhk-one-corrections</a>（MIT License）</p>
