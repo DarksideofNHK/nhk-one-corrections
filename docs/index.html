@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NHK ONE 訂正一覧</title>
+<meta name="description" content="NHK ONE の見逃し配信で、映像に重ねて出る「訂正・お断り」をその回の一覧にするブックマークレット（非公式）">
+<style>
+:root{
+  --bg:#f5f7f9; --surface:#ffffff; --ink:#17212b; --muted:#5b6674; --rule:#dde2e8;
+  --accent:#1f5fa8; --btn:#b3261e; --btn-ink:#ffffff; --code:#eef1f5;
+  --sans:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
+  --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0f141a; --surface:#161d26; --ink:#e6ebf0; --muted:#9ba6b3; --rule:#28323e;
+    --accent:#86b6ec; --btn:#d9483d; --btn-ink:#ffffff; --code:#1d2632;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0f141a; --surface:#161d26; --ink:#e6ebf0; --muted:#9ba6b3; --rule:#28323e;
+  --accent:#86b6ec; --btn:#d9483d; --btn-ink:#ffffff; --code:#1d2632;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15.5px;line-height:1.8;
+  padding:32px 16px 64px}
+main{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+h1{margin:0;font-size:clamp(26px,5vw,34px);line-height:1.3;letter-spacing:.02em}
+h2{margin:0 0 8px;font-size:18px}
+p{margin:0}
+.lead{color:var(--muted)}
+section{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:20px 22px;
+  display:flex;flex-direction:column;gap:12px}
+.bm{align-self:flex-start;display:inline-block;background:var(--btn);color:var(--btn-ink);font-weight:800;
+  text-decoration:none;padding:10px 20px;border-radius:999px;cursor:grab;font-size:16px}
+.bm:active{cursor:grabbing}
+ol,ul{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:6px}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 5px;border-radius:4px}
+pre{margin:0;background:var(--code);border-radius:8px;padding:12px 14px;overflow-x:auto;font-family:var(--mono);
+  font-size:13px;line-height:1.6}
+a{color:var(--accent)}
+button{font:inherit;font-size:14px;font-weight:700;color:var(--ink);background:var(--code);border:1px solid var(--rule);
+  border-radius:8px;padding:6px 14px;cursor:pointer;align-self:flex-start}
+.small{font-size:13.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>NHK ONE 訂正一覧</h1>
+    <p class="lead">NHK ONE の見逃し配信では、放送で誤りがあった場面に「右下の会社名に誤り　正しくは〜」のような文言が映像に重ねて表示されます。
+      このブックマークレットは、いま開いている回に入っている<strong>訂正・お断りの文言を時刻つきで一覧</strong>にします。非公式のツールです。</p>
+  </header>
+
+  <section>
+    <h2>入れ方</h2>
+    <p>下のボタンを、ブラウザのブックマークバーへドラッグしてください。</p>
+    <a class="bm" href="javascript:(async%20()%20=&gt;%20{%0Aconst%20PANEL_ID%20=%20&#x27;nhk-one-corrections-panel&#x27;;%0Aconst%20old%20=%20document.getElementById(PANEL_ID);%0Aif%20(old)%20{%20old.remove();%20return;%20}%0Aconst%20url%20=%20performance.getEntriesByType(&#x27;resource&#x27;)%0A.map(e%20=&gt;%20e.name)%0A.reverse()%0A.find(n%20=&gt;%20/%5C/videoinfo-[^/?]+%5C.json(%5C?|$)/.test(n));%0Aif%20(!url)%20{%0Aalert(&#x27;%E3%81%93%E3%81%AE%E5%9B%9E%E3%81%AE%E5%8B%95%E7%94%BB%E6%83%85%E5%A0%B1%E3%81%8C%E3%81%BE%E3%81%A0%E8%AA%AD%E3%81%BF%E8%BE%BC%E3%81%BE%E3%82%8C%E3%81%A6%E3%81%84%E3%81%BE%E3%81%9B%E3%82%93%E3%80%82%5CnNHK%20ONE%20%E3%81%AE%E8%A6%8B%E9%80%83%E3%81%97%E9%85%8D%E4%BF%A1%E3%81%AE%E3%83%9A%E3%83%BC%E3%82%B8%E3%81%A7%E3%80%81%E3%83%97%E3%83%AC%E3%83%BC%E3%83%A4%E3%83%BC%E3%81%8C%E8%A1%A8%E7%A4%BA%E3%81%95%E3%82%8C%E3%81%A6%E3%81%8B%E3%82%89%E3%82%82%E3%81%86%E4%B8%80%E5%BA%A6%E6%8A%BC%E3%81%97%E3%81%A6%E3%81%8F%E3%81%A0%E3%81%95%E3%81%84%E3%80%82&#x27;);%0Areturn;%0A}%0Alet%20info;%0Atry%20{%0Ainfo%20=%20await%20(await%20fetch(url)).json();%0A}%20catch%20(e)%20{%0Aalert(&#x27;%E5%8B%95%E7%94%BB%E6%83%85%E5%A0%B1%E3%82%92%E8%AA%AD%E3%82%81%E3%81%BE%E3%81%9B%E3%82%93%E3%81%A7%E3%81%97%E3%81%9F:%20&#x27;%20+%20e);%0Areturn;%0A}%0Aconst%20toSec%20=%20s%20=&gt;%20{%0Aconst%20m%20=%20/^(%5Cd%5Cd)(%5Cd%5Cd)(%5Cd%5Cd)/.exec(s%20||%20&#x27;&#x27;);%0Areturn%20m%20?%20(+m[1]%20*%2060%20+%20+m[2])%20*%2060%20+%20+m[3]%20:%20null;%0A};%0Aconst%20hms%20=%20sec%20=&gt;%20{%0Aconst%20h%20=%20Math.floor(sec%20/%203600),%20m%20=%20Math.floor(sec%20/%2060)%20%25%2060,%20s%20=%20sec%20%25%2060;%0Aconst%20p%20=%20n%20=&gt;%20String(n).padStart(2,%20&#x27;0&#x27;);%0Areturn%20h%20?%20`${h}:${p(m)}:${p(s)}`%20:%20`${p(m)}:${p(s)}`;%0A};%0Aconst%20kindOf%20=%20msg%20=&gt;%20{%0Aif%20(/%E8%AA%A4%E3%82%8A|%E6%AD%A3%E3%81%97%E3%81%8F%E3%81%AF|%E6%AD%A3%E3%81%97%E3%81%84|%E8%A8%82%E6%AD%A3|%E3%81%A7%E3%81%AF%E3%81%AA%E3%81%8F/.test(msg))%20return%20&#x27;%E8%A8%82%E6%AD%A3&#x27;;%0Aif%20(msg.includes(&#x27;%E4%BF%AE%E6%AD%A3%E3%81%97%E3%81%BE%E3%81%97%E3%81%9F&#x27;))%20return%20&#x27;%E4%BF%AE%E6%AD%A3%E6%B8%88%E3%81%BF&#x27;;%0Aif%20(/%E3%83%8B%E3%83%A5%E3%83%BC%E3%82%B9%E3%81%8C%E5%85%A5|%E4%B8%AD%E6%96%AD|%E4%BC%91%E6%AD%A2|%E5%B7%AE%E3%81%97%E6%9B%BF%E3%81%88|%E3%81%8A%E6%96%AD%E3%82%8A|%E3%81%8A%E7%9F%A5%E3%82%89%E3%81%9B|%E6%94%BE%E9%80%81%E3%81%AF%E3%81%82%E3%82%8A%E3%81%BE%E3%81%9B%E3%82%93/.test(msg))%20return%20&#x27;%E3%81%8A%E7%9F%A5%E3%82%89%E3%81%9B&#x27;;%0Areturn%20&#x27;%E8%A3%9C%E8%B6%B3&#x27;;%0A};%0Aconst%20items%20=%20(info.disclaimer%20||%20[])%0A.filter(d%20=&gt;%20d%20&amp;&amp;%20d.message)%0A.map(d%20=&gt;%20({%20sec:%20toSec(d.start),%20dur:%20toSec(d.duration),%20message:%20d.message.trim(),%20kind:%20kindOf(d.message)%20}))%0A.filter(d%20=&gt;%20d.sec%20!==%20null)%0A.sort((a,%20b)%20=&gt;%20a.sec%20-%20b.sec);%0Aconst%20title%20=%20document.title.replace(/%5Cs*[|%EF%BD%9C]%5Cs*NHK(%5Cs*ONE)?%5Cs*$/,%20&#x27;&#x27;);%0Aconst%20lines%20=%20items.map(d%20=&gt;%20`[${hms(d.sec)}%E3%80%9C%20${d.dur}%E7%A7%92]%E3%80%94${d.kind}%E3%80%95${d.message}`);%0Aconst%20plain%20=%20[title,%20location.href,%20...(lines.length%20?%20lines%20:%20[&#x27;%EF%BC%88%E8%A8%82%E6%AD%A3%E3%83%BB%E3%81%8A%E6%96%AD%E3%82%8A%E3%81%AF%E3%81%82%E3%82%8A%E3%81%BE%E3%81%9B%E3%82%93%EF%BC%89&#x27;]),%0A&#x27;%E5%87%BA%E5%85%B8:%20NHK%20ONE%20%E8%A6%8B%E9%80%83%E3%81%97%E9%85%8D%E4%BF%A1%EF%BC%88%E6%98%A0%E5%83%8F%E3%81%AB%E9%87%8D%E3%81%AD%E3%81%A6%E8%A1%A8%E7%A4%BA%E3%81%95%E3%82%8C%E3%82%8B%E6%96%87%E8%A8%80%EF%BC%89&#x27;].join(&#x27;%5Cn&#x27;);%0Aconst%20host%20=%20document.createElement(&#x27;div&#x27;);%0Ahost.id%20=%20PANEL_ID;%0Ahost.style.cssText%20=%20&#x27;position:fixed;inset:16px%2016px%20auto%20auto;margin:0;padding:0;border:0;background:none;overflow:visible;z-index:2147483647&#x27;;%0Aconst%20root%20=%20host.attachShadow({%20mode:%20&#x27;open&#x27;%20});%0Aconst%20style%20=%20document.createElement(&#x27;style&#x27;);%0Astyle.textContent%20=%20`%0A.p{width:min(440px,calc(100vw%20-%2032px));max-height:calc(100vh%20-%2032px);overflow:auto;box-sizing:border-box;%0Abackground:%2312181f;color:%23eef2f6;border:1px%20solid%20%232c3642;border-radius:10px;padding:14px%2016px;%0Afont:14px/1.6%20%22Hiragino%20Sans%22,%22Hiragino%20Kaku%20Gothic%20ProN%22,%22Yu%20Gothic%22,system-ui,sans-serif;%0Abox-shadow:0%208px%2028px%20rgba(0,0,0,.45)}%0A.h{display:flex;gap:8px;align-items:flex-start;justify-content:space-between}%0A.t{font-weight:700;font-size:15px}%0A.s{color:%239aa6b3;font-size:12.5px;margin-top:2px;overflow-wrap:anywhere}%0Abutton{flex-shrink:0;white-space:nowrap;font:inherit;font-size:12.5px;font-weight:700;color:%23eef2f6;background:%23243040;border:1px%20solid%20%2334404e;%0Aborder-radius:6px;padding:3px%2010px;cursor:pointer}%0Abutton:hover{background:%232e3c4f}%0Aol{list-style:none;margin:12px%200%200;padding:0;display:flex;flex-direction:column;gap:10px}%0Ali{border-top:1px%20solid%20%2326303b;padding-top:10px}%0A.m{display:flex;gap:8px;align-items:center;font-size:12.5px;color:%239aa6b3}%0A.tc{font-family:ui-monospace,Menlo,monospace;color:%23eef2f6}%0A.k{font-weight:700;border-radius:4px;padding:0%207px;font-size:12px}%0A.k[data-k=%22%E8%A8%82%E6%AD%A3%22]{background:%234a1f1d;color:%23ffb1aa}%0A.k[data-k=%22%E8%A3%9C%E8%B6%B3%22]{background:%2343330f;color:%23f3cd7d}%0A.k[data-k=%22%E4%BF%AE%E6%AD%A3%E6%B8%88%E3%81%BF%22]{background:%2315372f;color:%238fdcc6}%0A.k[data-k=%22%E3%81%8A%E7%9F%A5%E3%82%89%E3%81%9B%22]{background:%232a323d;color:%23c3ccd6}%0A.msg{margin-top:4px;overflow-wrap:anywhere}%0A.e{margin-top:12px;color:%239aa6b3}%0A.f{display:flex;gap:8px;margin-top:14px;align-items:center;font-size:12px;color:%237d8996}`;%0Aconst%20el%20=%20(tag,%20cls,%20text)%20=&gt;%20{%0Aconst%20x%20=%20document.createElement(tag);%0Aif%20(cls)%20x.className%20=%20cls;%0Aif%20(text%20!==%20undefined)%20x.textContent%20=%20text;%0Areturn%20x;%0A};%0Aconst%20panel%20=%20el(&#x27;div&#x27;,%20&#x27;p&#x27;);%0Aconst%20head%20=%20el(&#x27;div&#x27;,%20&#x27;h&#x27;);%0Aconst%20hl%20=%20el(&#x27;div&#x27;);%0Ahl.append(el(&#x27;div&#x27;,%20&#x27;t&#x27;,%20`%E3%81%93%E3%81%AE%E5%9B%9E%E3%81%AE%E8%A8%82%E6%AD%A3%E3%83%BB%E3%81%8A%E6%96%AD%E3%82%8A%EF%BC%88${items.length}%E4%BB%B6%EF%BC%89`),%20el(&#x27;div&#x27;,%20&#x27;s&#x27;,%20title));%0Aconst%20close%20=%20el(&#x27;button&#x27;,%20&#x27;&#x27;,%20&#x27;%E9%96%89%E3%81%98%E3%82%8B&#x27;);%0Aclose.onclick%20=%20()%20=&gt;%20host.remove();%0Ahead.append(hl,%20close);%0Apanel.append(head);%0Aif%20(items.length)%20{%0Aconst%20ol%20=%20el(&#x27;ol&#x27;);%0Afor%20(const%20d%20of%20items)%20{%0Aconst%20li%20=%20el(&#x27;li&#x27;);%0Aconst%20meta%20=%20el(&#x27;div&#x27;,%20&#x27;m&#x27;);%0Aconst%20k%20=%20el(&#x27;span&#x27;,%20&#x27;k&#x27;,%20d.kind);%0Ak.dataset.k%20=%20d.kind;%0Ameta.append(k,%20el(&#x27;span&#x27;,%20&#x27;tc&#x27;,%20`${hms(d.sec)}%E3%80%9C`),%20el(&#x27;span&#x27;,%20&#x27;&#x27;,%20`${d.dur}%E7%A7%92`));%0Ali.append(meta,%20el(&#x27;div&#x27;,%20&#x27;msg&#x27;,%20d.message));%0Aol.append(li);%0A}%0Apanel.append(ol);%0A}%20else%20{%0Apanel.append(el(&#x27;div&#x27;,%20&#x27;e&#x27;,%20&#x27;%E3%81%93%E3%81%AE%E5%9B%9E%E3%81%AE%E5%8B%95%E7%94%BB%E6%83%85%E5%A0%B1%E3%81%AB%E3%81%AF%E3%80%81%E8%A8%82%E6%AD%A3%E3%83%BB%E3%81%8A%E6%96%AD%E3%82%8A%E3%81%AE%E6%96%87%E8%A8%80%E3%81%AF%E3%81%82%E3%82%8A%E3%81%BE%E3%81%9B%E3%82%93%E3%81%A7%E3%81%97%E3%81%9F%E3%80%82&#x27;));%0A}%0Aconst%20foot%20=%20el(&#x27;div&#x27;,%20&#x27;f&#x27;);%0Aconst%20copy%20=%20el(&#x27;button&#x27;,%20&#x27;&#x27;,%20&#x27;%E3%83%86%E3%82%AD%E3%82%B9%E3%83%88%E3%81%A7%E3%82%B3%E3%83%94%E3%83%BC&#x27;);%0Acopy.onclick%20=%20async%20()%20=&gt;%20{%0Atry%20{%20await%20navigator.clipboard.writeText(plain);%20copy.textContent%20=%20&#x27;%E3%82%B3%E3%83%94%E3%83%BC%E3%81%97%E3%81%BE%E3%81%97%E3%81%9F&#x27;;%20}%0Acatch%20(e)%20{%20prompt(&#x27;%E3%82%B3%E3%83%94%E3%83%BC%E3%81%97%E3%81%A6%E3%81%8F%E3%81%A0%E3%81%95%E3%81%84&#x27;,%20plain);%20}%0A};%0Afoot.append(copy,%20el(&#x27;span&#x27;,%20&#x27;&#x27;,%20&#x27;%E6%99%82%E5%88%BB%E3%81%AF%E9%85%8D%E4%BF%A1%E5%8B%95%E7%94%BB%E3%81%AE%E9%A0%AD%E3%81%8B%E3%82%89%E3%81%AE%E6%99%82%E9%96%93&#x27;));%0Apanel.append(foot);%0Aroot.append(style,%20panel);%0Adocument.body.append(host);%0Aif%20(host.showPopover)%20{%20host.popover%20=%20&#x27;manual&#x27;;%20host.showPopover();%20}%0A})();">NHK ONE 訂正一覧</a>
+    <p class="small">ドラッグできない環境では、新しいブックマークを作り、URL 欄に次のコードを貼り付けます。</p>
+    <button type="button" id="copy">コードをコピー</button>
+  </section>
+
+  <section>
+    <h2>使い方</h2>
+    <ol>
+      <li>NHK ONE で見逃し配信の番組ページを開く（ふだんどおり、ご利用確認を済ませた状態で）</li>
+      <li>プレーヤーが表示されたら、ブックマークの「NHK ONE 訂正一覧」を押す</li>
+      <li>右上に、この回の訂正・お断りが時刻つきで出ます。もう一度押すと閉じます</li>
+    </ol>
+    <p class="small">時刻は配信動画の頭からの時間です。「テキストでコピー」で、番組名・ページの URL・出典つきの文字にできます。</p>
+  </section>
+
+  <section>
+    <h2>何をしているか</h2>
+    <ul>
+      <li>番組ページのプレーヤーは、動画に付いている情報（JSON）の中の文言を、指定の時刻から指定の秒数だけ映像に重ねています</li>
+      <li>このブックマークレットは、<strong>ページがすでに読み込んだその情報を読み直して</strong>一覧にするだけです。番組表の巡回や、ほかのページへのアクセスはしません</li>
+      <li>映像・音声・字幕には触れません。情報はどこにも送りません</li>
+      <li>「訂正」「補足」「修正済み」「お知らせ」の分類は、文言のキーワードからのおおまかな推定です</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>注意</h2>
+    <ul>
+      <li>NHK とは関係のない非公式のツールです。NHK ONE の仕様が変わると動かなくなることがあります</li>
+      <li>NHK ONE の利用には <a href="https://www.nhk.or.jp/rules/">NHKインターネットサービス利用規約</a> が適用されます。自動で大量に取得するような使い方はしないでください</li>
+      <li>訂正の文言を紹介するときは、番組名と出典（NHK ONE）を添えてください</li>
+    </ul>
+    <p class="small">ソースコード: <a href="https://github.com/DarksideofNHK/nhk-one-corrections">github.com/DarksideofNHK/nhk-one-corrections</a>（MIT License）</p>
+  </section>
+</main>
+<script>
+document.getElementById('copy').addEventListener('click', async (e) => {
+  const code = document.querySelector('.bm').getAttribute('href');
+  try { await navigator.clipboard.writeText(code); e.target.textContent = 'コピーしました'; }
+  catch (err) { prompt('コピーしてください', code); }
+});
+document.querySelector('.bm').addEventListener('click', (e) => {
+  e.preventDefault();
+  alert('このボタンはブックマークバーへドラッグして使います。\nNHK ONE の番組ページで押してください。');
+});
+</script>
+</body>
+</html>
