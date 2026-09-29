@@ -164,6 +164,8 @@ void (async () => {
   };
   // programs: [{name, url, start, items}]。showTime: 番組名の前に放送開始時刻を出す
   const render = ({ title, sub, programs, empty, showTime, footer, textHead }) => {
+    // あとから開いたページのお知らせ窓に隠れないよう、描き直すたびに最前面へ出し直す
+    if (host.showPopover && host.matches(':popover-open')) { host.hidePopover(); host.showPopover(); }
     panel.replaceChildren();
     const head = el('div', 'h');
     const hl = el('div');
@@ -204,15 +206,49 @@ void (async () => {
   const status = (title, sub) => render({ title, sub, programs: [], empty: '', textHead: [] });
 
   // ---- その日の全番組
+  // 全国: その日の全地域の一覧を読み、同じ動画はまとめる。一部の地域にしか出ない回は、その地域の番組として印を付ける
+  const CODES = Object.keys(AREA).sort().filter(c => !['110', '120', '140'].includes(c));
+  const allAreaVideos = async (svc, day, onProgress) => {
+    const seen = new Map();
+    const queue = [...CODES];
+    let done = 0;
+    const worker = async () => {
+      for (let code = queue.shift(); code; code = queue.shift()) {
+        let vs = [];
+        try { vs = await pageVideos(`/tv/pl/schedule-tep-${svc}-${code}-${day}/list`); } catch (e) { vs = []; }
+        for (const v of vs) {
+          if (!seen.has(v.desc)) seen.set(v.desc, { ...v, areas: [] });
+          seen.get(v.desc).areas.push(code);
+        }
+        onProgress(++done, CODES.length);
+      }
+    };
+    await Promise.all([worker(), worker(), worker(), worker()]);
+    return [...seen.values()].map(v => {
+      const local = v.areas.length < CODES.length / 2;
+      const origin = (/hskOriginal-[a-z0-9]+-(\d+)-/.exec(v.id) || [])[1];
+      const where = local ? (AREA[origin] && v.areas.includes(origin) ? AREA[origin] : v.areas.map(c => AREA[c]).join('・')) : '';
+      return { ...v, name: where ? `［${where}］${v.name}` : v.name };
+    }).sort((a, b) => a.start.localeCompare(b.start));
+  };
+
   const showDay = async (svc, area, day) => {
-    const label = `${dayLabel(day)} ${SVC[svc] || svc}（${AREA[area] || area}）`;
+    const label = `${dayLabel(day)} ${SVC[svc] || svc}（${area === 'all' ? '全国' : AREA[area] || area}）`;
     const title = `${label}の訂正・お断り`;
     status(title, '番組の一覧を読んでいます…');
     let videos;
-    try { videos = await pageVideos(`/tv/pl/schedule-tep-${svc}-${area}-${day}/list`); }
-    catch (e) { videos = []; }
+    if (area === 'all') {
+      videos = await allAreaVideos(svc, day, (n, all) => status(title, `全国${all}地域の番組の一覧を読んでいます…（${n}/${all}）`));
+    } else {
+      try { videos = await pageVideos(`/tv/pl/schedule-tep-${svc}-${area}-${day}/list`); }
+      catch (e) { videos = []; }
+    }
     const pick = el('select');
     pick.setAttribute('aria-label', '地域');
+    const allOpt = el('option', '', '全国（時間がかかります）');
+    allOpt.value = 'all';
+    allOpt.selected = area === 'all';
+    pick.append(allOpt);
     // 番号の順に並べる（'130' のような数字だけのキーは Object.entries で先に来てしまうため）
     for (const [code, name] of Object.keys(AREA).sort().map(c => [c, AREA[c]])) {
       if (['110', '120', '140'].includes(code)) continue;
