@@ -22,7 +22,7 @@ def main():
     bm = bookmarklet(SRC.read_text(encoding="utf-8"))
     (HERE / "dist").mkdir(exist_ok=True)
     (HERE / "dist" / "bookmarklet.txt").write_text(bm + "\n", encoding="utf-8")
-    page = (HERE / "docs" / "index.template.html").read_text(encoding="utf-8")
+    page = (HERE / "src" / "index.template.html").read_text(encoding="utf-8")
     page = page.replace("__BOOKMARKLET_HREF__", html.escape(bm, quote=True))
     (HERE / "docs" / "index.html").write_text(page, encoding="utf-8")
     print(f"dist/bookmarklet.txt（{len(bm):,}字）・docs/index.html を作りました")
