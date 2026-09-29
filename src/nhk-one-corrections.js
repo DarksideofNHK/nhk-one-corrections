@@ -232,17 +232,29 @@ void (async () => {
     }).sort((a, b) => a.start.localeCompare(b.start));
   };
 
-  const showDay = async (svc, area, day) => {
+  // 一度読んだ日の結果はブラウザに残し、読み直すかどうかは利用者が選ぶ（前の日・次の日を行き来しても読み直さない）
+  const CACHE_KEY = 'nhk-one-corrections:days:v1';
+  const loadCache = () => { try { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); } catch (e) { return {}; } };
+  const saveDay = (key, entry) => {
+    try {
+      const c = loadCache();
+      c[key] = entry;
+      // 古いものから消して、最近の60日分（チャンネル・地域ごと）までにする
+      const keys = Object.keys(c).sort((x, y) => c[y].at - c[x].at);
+      for (const k of keys.slice(60)) delete c[k];
+      localStorage.setItem(CACHE_KEY, JSON.stringify(c));
+    } catch (e) { /* 保存できない環境では、毎回読むだけ */ }
+  };
+  const when = t => {
+    const d = new Date(t + 9 * 3600 * 1000);
+    return `${d.getUTCMonth() + 1}/${d.getUTCDate()} ${p2(d.getUTCHours())}:${p2(d.getUTCMinutes())}`;
+  };
+
+  // opts.reload: 残してある結果を使わずに読み直す
+  const showDay = async (svc, area, day, opts = {}) => {
     const label = `${dayLabel(day)} ${SVC[svc] || svc}（${area === 'all' ? '全国' : AREA[area] || area}）`;
     const title = `${label}の訂正・お断り`;
-    status(title, '番組の一覧を読んでいます…');
-    let videos;
-    if (area === 'all') {
-      videos = await allAreaVideos(svc, day, (n, all) => status(title, `全国${all}地域の番組の一覧を読んでいます…（${n}/${all}）`));
-    } else {
-      try { videos = await pageVideos(`/tv/pl/schedule-tep-${svc}-${area}-${day}/list`); }
-      catch (e) { videos = []; }
-    }
+    const key = `${svc}-${area}-${day}`;
     const pick = el('select');
     pick.setAttribute('aria-label', '地域');
     const allOpt = el('option', '', '全国（時間がかかります）');
@@ -264,17 +276,42 @@ void (async () => {
       ...Object.keys(SVC).map(s => button(SVC[s], () => showDay(s, area, day), s === svc)),
       pick,
     ];
+    const reloadButton = label2 => button(label2, () => showDay(svc, area, day, { reload: true }));
+
+    const cached = !opts.reload && loadCache()[key];
+    if (cached) {
+      const sub = `${cached.sub}（${when(cached.at)} に読み込んだ結果）`;
+      render({ title, sub, programs: cached.hits, showTime: true, footer: [reloadButton('読み込み直す'), ...nav],
+        textHead: [title, sub], empty: cached.empty });
+      return;
+    }
+    if (area === 'all' && !opts.reload) {
+      // 全国は重いので、押されるまで読まない
+      render({ title, sub: 'まだ読み込んでいません', programs: [], footer: [reloadButton('全国を読み込む（30〜40秒）'), ...nav], textHead: [title],
+        empty: `全国${CODES.length}地域の番組の一覧を読みます。読んだ結果はこのブラウザに残るので、前の日・次の日を行き来しても読み直しません。` });
+      return;
+    }
+
+    status(title, '番組の一覧を読んでいます…');
+    let videos;
+    if (area === 'all') {
+      videos = await allAreaVideos(svc, day, (n, all) => status(title, `全国${all}地域の番組の一覧を読んでいます…（${n}/${all}）`));
+    } else {
+      try { videos = await pageVideos(`/tv/pl/schedule-tep-${svc}-${area}-${day}/list`); }
+      catch (e) { videos = []; }
+    }
     if (!videos.length) {
       render({ title, sub: '見逃し配信の番組が見つかりませんでした', programs: [], footer: nav, textHead: [title],
         empty: '配信期間（おおむね1週間）を過ぎた日か、ご利用確認がまだかもしれません。' });
       return;
     }
     const { list, errors } = await withItems(videos, (n, all) => status(title, `見逃し配信 ${all}本の動画情報を確認しています…（${n}/${all}）`));
-    const hits = list.filter(v => v.items.length);
+    const hits = list.filter(v => v.items.length).map(({ name, url, start, items }) => ({ name, url, start, items }));
     const count = hits.reduce((s, v) => s + v.items.length, 0);
     const sub = `見逃し配信 ${videos.length}本を確認。${hits.length}番組に${count}件` + (errors ? `（読めなかった動画情報 ${errors}件）` : '');
-    render({ title, sub, programs: hits, showTime: true, footer: nav, textHead: [title, sub],
-      empty: 'この日の番組には、訂正・お断りの文言はありませんでした。' });
+    const empty = 'この日の番組には、訂正・お断りの文言はありませんでした。';
+    if (!errors) saveDay(key, { at: Date.now(), sub, hits, empty });
+    render({ title, sub, programs: hits, showTime: true, footer: nav, textHead: [title, sub], empty });
   };
 
   // ---- いま開いている回
