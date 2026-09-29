@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NHK ONE 訂正一覧</title>
-<meta name="description" content="NHK ONE の見逃し配信で、映像に重ねて出る「訂正・お断り」を、その回やその日の全番組について一覧にするブックマークレット（非公式）">
+<meta name="description" content="NHK ONE の見逃し配信で、映像に重ねて出る「訂正・お断り」を、その回やその日の全番組について一覧にするツール（拡張機能・ブックマークレット、非公式）">
 <style>
 :root{
   --bg:#f5f7f9; --surface:#ffffff; --ink:#17212b; --muted:#5b6674; --rule:#dde2e8;
@@ -52,11 +52,22 @@ button{font:inherit;font-size:14px;font-weight:700;color:var(--ink);background:v
   <header>
     <h1>NHK ONE 訂正一覧</h1>
     <p class="lead">NHK ONE の見逃し配信では、放送で誤りがあった場面に「右下の会社名に誤り　正しくは〜」のような文言が映像に重ねて表示されます。
-      このブックマークレットは、その回や、その日の全番組の<strong>訂正・お断りの文言を時刻つきで一覧</strong>にします。非公式のツールです。</p>
+      このツールは、その回や、その日の全番組の<strong>訂正・お断りの文言を時刻つきで一覧</strong>にします。非公式のツールです。</p>
   </header>
 
   <section>
-    <h2>入れ方</h2>
+    <h2>拡張機能で使う（Chrome・Edge など）</h2>
+    <ol>
+      <li><a href="https://github.com/DarksideofNHK/nhk-one-corrections/releases/latest">Releases</a> から <code>nhk-one-corrections-extension-*.zip</code> をダウンロードして展開する</li>
+      <li><code>chrome://extensions</code> を開き、右上の「デベロッパー モード」をオンにする</li>
+      <li>「パッケージ化されていない拡張機能を読み込む」で、展開したフォルダを選ぶ</li>
+      <li>ツールバーの「訂」のボタンか、Alt+Shift+T で開く・閉じる</li>
+    </ol>
+    <p class="small">権限は activeTab と scripting だけで、ボタンを押したタブの中でしか動きません。</p>
+  </section>
+
+  <section>
+    <h2>ブックマークレットで使う</h2>
     <p>下のボタンを、ブラウザのブックマークバーへドラッグしてください。</p>
     <a class="bm" href="__BOOKMARKLET_HREF__">NHK ONE 訂正一覧</a>
     <p class="small">ドラッグできない環境では、新しいブックマークを作り、URL 欄に次のコードを貼り付けます。</p>
@@ -67,7 +78,7 @@ button{font:inherit;font-size:14px;font-weight:700;color:var(--ink);background:v
     <h2>使い方</h2>
     <ol>
       <li>NHK ONE で見逃し配信を見られる状態にする（ふだんどおり、ご利用確認を済ませた状態）</li>
-      <li>番組ページでブックマークの「NHK ONE 訂正一覧」を押すと、右上に<strong>その回</strong>の訂正・お断りが時刻つきで出ます</li>
+      <li>番組ページで拡張機能のボタン（またはブックマーク）を押すと、右上に<strong>その回</strong>の訂正・お断りが時刻つきで出ます</li>
       <li>パネルの「この日の総合の全番組」を押すと、<strong>その日の全番組</strong>の訂正・お断りの一覧になります。「前の日」「次の日」「総合」「Eテレ」で切り替えられます</li>
     </ol>
     <p class="small">番組ページ以外の NHK ONE のページで押すと、今日の総合（東京）の一覧が出ます。もう一度押すと閉じます。▶ は配信動画の頭からの時間、「放送」は放送された時刻です。「テキストでコピー」で、番組名・ページの URL・出典つきの文字にできます。</p>

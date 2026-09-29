@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "NHK ONE 訂正一覧",
+  "version": "0.1.0",
+  "description": "NHK ONE の見逃し配信で映像に重ねて出る「訂正・お断り」を、その回やその日の全番組について一覧にします（非公式）。",
+  "homepage_url": "https://github.com/DarksideofNHK/nhk-one-corrections",
+  "permissions": ["activeTab", "scripting"],
+  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_title": "NHK ONE 訂正一覧",
+    "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" }
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": { "default": "Alt+Shift+T" },
+      "description": "訂正の一覧を開く・閉じる"
+    }
+  },
+  "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" }
+}

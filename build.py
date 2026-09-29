@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-"""src/nhk-one-corrections.js → dist/bookmarklet.txt と docs/index.html（インストール用ページ）を作る。
+"""src/nhk-one-corrections.js から、ブックマークレット（dist/bookmarklet.txt・docs/index.html のインストール用ページ）と
+拡張機能（extension/。配布用の zip は dist/）を作る。
 
   python3 build.py
 """
 import html
+import json
+import shutil
+import zipfile
 import urllib.parse
 from pathlib import Path
 
@@ -25,7 +29,15 @@ def main():
     page = (HERE / "src" / "index.template.html").read_text(encoding="utf-8")
     page = page.replace("__BOOKMARKLET_HREF__", html.escape(bm, quote=True))
     (HERE / "docs" / "index.html").write_text(page, encoding="utf-8")
-    print(f"dist/bookmarklet.txt（{len(bm):,}字）・docs/index.html を作りました")
+    # 拡張機能: 同じコードをそのまま入れる（ツールバーのボタンで、いまのタブに差し込む）
+    shutil.copyfile(SRC, HERE / "extension" / "nhk-one-corrections.js")
+    ver = json.loads((HERE / "extension" / "manifest.json").read_text(encoding="utf-8"))["version"]
+    zpath = HERE / "dist" / f"nhk-one-corrections-extension-{ver}.zip"
+    with zipfile.ZipFile(zpath, "w", zipfile.ZIP_DEFLATED) as z:
+        for f in sorted((HERE / "extension").rglob("*")):
+            if f.is_file() and f.name != ".DS_Store":
+                z.write(f, f.relative_to(HERE / "extension"))
+    print(f"dist/bookmarklet.txt（{len(bm):,}字）・docs/index.html・extension/・{zpath.relative_to(HERE)} を作りました")
 
 
 if __name__ == "__main__":
