@@ -527,8 +527,8 @@ void (async () => {
     if (!progs.length) {
       let msg = '';
       if (S.loading && !programs().length) msg = '読み込んでいます…';
-      else if (S.view === 'episode' && S.ep && !S.ep.progs.length && !S.ep.error) msg = 'この回の動画情報が見つかりませんでした。見逃し配信が終わった回か、ご利用確認がまだかもしれません（番組を見るのにご利用確認が求められたときは、先に済ませてください）。';
-      else if (S.view === 'day' && S.dayData && S.dayData.done && (S.dayData.count === 0)) msg = '見逃し配信の番組が見つかりませんでした。配信期間（おおむね1週間）を過ぎた日か、ご利用確認がまだかもしれません。';
+      else if (S.view === 'episode' && S.ep && !S.ep.progs.length && !S.ep.error) msg = 'この回の動画情報が見つかりませんでした。NHK ONE の認証の期限が切れていると、こうなることがあります。ページを読み込み直してから開き直してください。見逃し配信が終わった回や、ご利用確認がまだのときもこうなります。';
+      else if (S.view === 'day' && S.dayData && S.dayData.done && (S.dayData.count === 0)) msg = '見逃し配信の番組が見つかりませんでした。NHK ONE の認証の期限が切れていると、こうなることがあります。ページを読み込み直してから開き直してください。配信期間（おおむね1週間）を過ぎた日や、ご利用確認がまだのときもこうなります。';
       else if (programs().length) msg = '選んだ種類のものはありません。上のボタンで種類を選んでください。';
       else if (!S.loading) msg = S.view === 'episode' ? 'この回には、訂正・お断りの文言はありませんでした。' : 'この日の番組には、訂正・お断りの文言はありませんでした。';
       list.append(el('div', 'empty', msg));
