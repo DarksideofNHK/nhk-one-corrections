@@ -501,7 +501,12 @@ void (async () => {
       return;
     }
     if (S.view === 'episode') {
-      if (S.ep) status.append(el('span', '', S.ep.error ? '読み込めませんでした。↻ でやり直してください' : `この回の訂正・お断り ${programs().reduce((s, g) => s + g.items.length, 0)}件`));
+      if (S.ep) {
+        const t = S.ep.error ? '読み込めませんでした。タブを切り替えてやり直してください'
+          : !S.ep.progs.length ? 'この回の動画情報が見つかりませんでした'
+          : `この回の訂正・お断り ${programs().reduce((s, g) => s + g.items.length, 0)}件`;
+        status.append(el('span', '', t));
+      }
       return;
     }
     const d = S.dayData;
